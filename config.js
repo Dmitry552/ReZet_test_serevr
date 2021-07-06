@@ -1,9 +1,9 @@
 require('dotenv').config();
 
 module.exports = {
-  PORT: process.env.PORT || 8000,
-  URL_DB: process.env.URL_DB,
-  SEKRET_KEY: process.env.SEKRET_KEY,
+  PORT: process.env.PORT || 5000,
+  URL_DB: process.env.URL_DB || 'mongodb+srv://dbUser:a9dnWGRZtNWrOfmX@rezet.vn0kp.mongodb.net/ReZet?retryWrites=true&w=majority',
+  SEKRET_KEY: process.env.SEKRET_KEY || '3487BVbyyerR3VTN8rvy3287rgcnugui3',
   SMTP_HOST: 'smtp.gmail.com',
   SMTP_PORT: 587,
   SMTP_USER: 'nodemaill552@gmail.com',
