@@ -15,64 +15,83 @@ class BasketService {
 
   async update(productId, quantity, id) {
     if(quantity < 1) quantity = 1;
+
     const basket = await Basket.findOne({owner: id});
     if(!basket) throw errorService.BadRequest('Корзина пользователя не найдена!');
+
     const basketProduct = await BasketProduct.findOne({basket: basket._id, _id: productId});
     if(!basketProduct) throw errorService.BadRequest('Товар в корзине не найден!');
+
     const productPrice = basketProduct.price / basketProduct.quantity;
     basket.fullPrice = basket.fullPrice - basketProduct.price;
     basketProduct.quantity = quantity;
     basketProduct.price = quantity * productPrice;
     basket.fullPrice = basket.fullPrice + basketProduct.price;
+
     await basketProduct.save();
     const currentProduct = await this.basket(basket._id);
-    return {currentProduct, fullPrice: basket.fullPrice};
+
+    return {currentProduct, fullPrice: currentProduct.reduce((sum, current) => {return sum + current.price}, 0)};
   }
 
   async add(productId, id) {
     const basket = await Basket.findOne({owner: id});
     if(!basket) throw errorService.BadRequest('Корзина пользователя не найдена!');
+
     const product = await Product.findById(productId);
     if(!product) throw errorService.BadRequest('Такого товара не существует!');
+
     const basketProduct = await new BasketProduct({basket: basket._id, product: product._id, price: product.price});
+
     basket.fullPrice = basket.fullPrice + basketProduct.price;
     basket.product.push(basketProduct._id);
+
     await basketProduct.save();
     await basket.save();
-    
     const currentProduct = await this.basket(basket._id);
-    return {currentProduct, fullPrice: basket.fullPrice};
+
+    return {currentProduct, fullPrice:  currentProduct.reduce((sum, current) => {return sum + current.price}, 0)};
   }
 
   async get(id) {
     const basket = await Basket.findOne({owner: id});
     if(!basket) throw errorService.BadRequest('Корзина пользователя не найдена!');
-    const currentProduct = await this.basket(basket._id)
-    return {currentProduct, fullPrice: basket.fullPrice};
+
+    const currentProduct = await this.basket(basket._id);
+
+    return {currentProduct, fullPrice:  currentProduct.reduce((sum, current) => {return sum + current.price}, 0)};
   }
 
   async delete(productId, id) {
     const basket = await Basket.findOne({owner: id});
     if(!basket) throw errorService.BadRequest('Корзина пользователя не найдена!');
+
     const basketProduct = await BasketProduct.findOne({product: productId});
     if(!basketProduct) throw errorService.BadRequest('Такого товара в корзине не существует!');
+
     basket.fullPrice = basket.fullPrice - basketProduct.price;
     basket.product = basket.product.filter(p => p != productId)
-    await basketProduct.remove();
+
+    await basketProduct.deleteOne();
     await basket.save();
     const currentProduct = await this.basket(basket._id);
-    return {currentProduct, fullPrice: basket.fullPrice};
+
+    return {currentProduct, fullPrice:  currentProduct.reduce((sum, current) => {return sum + current.price}, 0)};
   }
 
   async clear(id) {
     const basket = await Basket.findOne({owner: id});
     if(!basket) throw errorService.BadRequest('Корзина пользователя не найдена!');
-    const basketProduct = await BasketProduct.remove({basket: basket._id});
+
+    const basketProduct = await BasketProduct.deleteMany({basket: basket._id});
     if(!basketProduct) throw errorService.BadRequest('Такого товара в корзине не существует!');
+
     basket.fullPrice = 0;
     basket.product = basket.product.filter(p => p === 'doom');
+    
     await basket.save();
     const currentProduct = await this.basket(basket._id);
+
     return {currentProduct, fullPrice: basket.fullPrice};
   }
 }
